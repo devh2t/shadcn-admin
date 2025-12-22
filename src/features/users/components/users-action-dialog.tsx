@@ -3,7 +3,9 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { createUser, updateUser } from '@/lib/users-service'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -105,6 +107,7 @@ export function UsersActionDialog({
   onOpenChange,
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
+  const queryClient = useQueryClient()
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
@@ -127,10 +130,44 @@ export function UsersActionDialog({
         },
   })
 
-  const onSubmit = (values: UserForm) => {
-    form.reset()
-    showSubmittedData(values)
-    onOpenChange(false)
+  const onSubmit = async (values: UserForm) => {
+    try {
+      if (isEdit && currentRow) {
+        await updateUser(currentRow.id, {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          username: values.username,
+          email: values.email,
+          phoneNumber: values.phoneNumber,
+          role: values.role as User['role'],
+          status: currentRow.status, // Keep existing status
+        })
+        toast.success('User updated successfully')
+      } else {
+        await createUser({
+          firstName: values.firstName,
+          lastName: values.lastName,
+          username: values.username,
+          email: values.email,
+          phoneNumber: values.phoneNumber,
+          password: values.password,
+          role: values.role as User['role'],
+          status: 'active', // Default status for new users
+        })
+        toast.success('User created successfully')
+      }
+
+      // Invalidate and refetch users
+      await queryClient.invalidateQueries({ queryKey: ['users'] })
+      form.reset()
+      onOpenChange(false)
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to ${isEdit ? 'update' : 'create'} user`
+      )
+    }
   }
 
   const isPasswordTouched = !!form.formState.dirtyFields.password

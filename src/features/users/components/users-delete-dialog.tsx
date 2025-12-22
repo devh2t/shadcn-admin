@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { deleteUser } from '@/lib/users-service'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,12 +23,23 @@ export function UsersDeleteDialog({
   currentRow,
 }: UserDeleteDialogProps) {
   const [value, setValue] = useState('')
+  const queryClient = useQueryClient()
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (value.trim() !== currentRow.username) return
 
-    onOpenChange(false)
-    showSubmittedData(currentRow, 'The following user has been deleted:')
+    try {
+      await deleteUser(currentRow.id)
+      toast.success('User deleted successfully')
+      // Invalidate and refetch users
+      await queryClient.invalidateQueries({ queryKey: ['users'] })
+      onOpenChange(false)
+      setValue('')
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to delete user'
+      )
+    }
   }
 
   return (

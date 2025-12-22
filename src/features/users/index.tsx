@@ -1,21 +1,32 @@
+import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { getUsers } from '@/lib/users-service'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider } from './components/users-provider'
 import { UsersTable } from './components/users-table'
-import { users } from './data/users'
 
 const route = getRouteApi('/_authenticated/users/')
 
 export function Users() {
   const search = route.useSearch()
   const navigate = route.useNavigate()
+
+  const {
+    data: users = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers,
+  })
 
   return (
     <UsersProvider>
@@ -38,7 +49,25 @@ export function Users() {
           </div>
           <UsersPrimaryButtons />
         </div>
-        <UsersTable data={users} search={search} navigate={navigate} />
+
+        {isLoading ? (
+          <div className='flex h-96 items-center justify-center'>
+            <Loader2 className='size-8 animate-spin text-muted-foreground' />
+          </div>
+        ) : error ? (
+          <div className='flex h-96 items-center justify-center'>
+            <div className='text-center'>
+              <p className='text-lg font-semibold text-destructive'>
+                Failed to load users
+              </p>
+              <p className='text-sm text-muted-foreground'>
+                {error instanceof Error ? error.message : 'Unknown error'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <UsersTable data={users} search={search} navigate={navigate} />
+        )}
       </Main>
 
       <UsersDialogs />

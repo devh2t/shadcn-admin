@@ -5,9 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
-import { IconFacebook, IconGithub } from '@/assets/brand-icons'
-import { useAuthStore } from '@/stores/auth-store'
-import { sleep, cn } from '@/lib/utils'
+import { IconGoogle, IconGithub } from '@/assets/brand-icons'
+import { signIn, signInWithGoogle } from '@/lib/auth-service'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -40,8 +40,24 @@ export function UserAuthForm({
   ...props
 }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const navigate = useNavigate()
-  const { auth } = useAuthStore()
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true)
+    try {
+      const { error } = await signInWithGoogle()
+      if (error) {
+        toast.error(error.message || 'Failed to sign in with Google')
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred. Please try again.')
+      // eslint-disable-next-line no-console
+      console.error('Google sign in error:', error)
+    } finally {
+      setIsGoogleLoading(false)
+    }
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,34 +67,34 @@ export function UserAuthForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
 
-    toast.promise(sleep(2000), {
-      loading: 'Signing in...',
-      success: () => {
+    try {
+      const { user, session, error } = await signIn(data.email, data.password)
+
+      if (error) {
+        toast.error(error.message || 'Failed to sign in')
         setIsLoading(false)
+        return
+      }
 
-        // Mock successful authentication with expiry computed at success time
-        const mockUser = {
-          accountNo: 'ACC001',
-          email: data.email,
-          role: ['user'],
-          exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
-        }
-
-        // Set user and access token
-        auth.setUser(mockUser)
-        auth.setAccessToken('mock-access-token')
-
+      if (user && session) {
+        toast.success(`Welcome back, ${data.email}!`)
+        
         // Redirect to the stored location or default to dashboard
         const targetPath = redirectTo || '/'
         navigate({ to: targetPath, replace: true })
-
-        return `Welcome back, ${data.email}!`
-      },
-      error: 'Error',
-    })
+      } else {
+        toast.error('Failed to sign in. Please try again.')
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred. Please try again.')
+      // eslint-disable-next-line no-console
+      console.error('Sign in error:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -137,11 +153,16 @@ export function UserAuthForm({
         </div>
 
         <div className='grid grid-cols-2 gap-2'>
-          <Button variant='outline' type='button' disabled={isLoading}>
+          <Button variant='outline' type='button' disabled={isLoading || isGoogleLoading}>
             <IconGithub className='h-4 w-4' /> GitHub
           </Button>
-          <Button variant='outline' type='button' disabled={isLoading}>
-            <IconFacebook className='h-4 w-4' /> Facebook
+          <Button
+            variant='outline'
+            type='button'
+            disabled={isLoading || isGoogleLoading}
+            onClick={handleGoogleSignIn}
+          >
+            <IconGoogle className='h-4 w-4' /> Google
           </Button>
         </div>
       </form>

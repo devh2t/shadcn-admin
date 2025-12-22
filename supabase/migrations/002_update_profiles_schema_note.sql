@@ -1,0 +1,41 @@
+-- NOTE: This migration is for reference only
+-- Your profiles table already exists with the following schema:
+--
+-- CREATE TABLE public.profiles (
+--   id uuid NOT NULL,
+--   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+--   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+--   username text NULL,
+--   avatar_url text NULL,
+--   email text NULL,
+--   firstname text NULL,
+--   lastname text NULL,
+--   phone text NULL,
+--   address text NULL,
+--   full_name text NULL,
+--   role text NULL DEFAULT 'member'::text,
+--   is_email_verified boolean NULL DEFAULT false,
+--   is_phone_verified boolean NULL DEFAULT false,
+--   is_super_admin boolean NULL DEFAULT false,
+--   banned_until timestamp with time zone NULL,
+--   providers text NULL,
+--   status text NULL DEFAULT 'active'::text,
+--   category text NULL DEFAULT 'Individual'::text,
+--   country_code text NULL,
+--   interest_tags text[] NULL DEFAULT array[]::text[],
+--   CONSTRAINT profiles_pkey PRIMARY KEY (id),
+--   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+-- );
+--
+-- Indexes:
+-- CREATE INDEX IF NOT EXISTS profiles_email_idx ON public.profiles USING btree (email);
+-- CREATE INDEX IF NOT EXISTS profiles_username_idx ON public.profiles USING btree (username);
+-- CREATE INDEX IF NOT EXISTS idx_profiles_interest_tags ON public.profiles USING gin (interest_tags);
+--
+-- Trigger:
+-- CREATE TRIGGER prevent_profile_role_escalation BEFORE UPDATE ON profiles
+-- FOR EACH ROW EXECUTE FUNCTION prevent_role_escalation();
+--
+-- This migration file is kept for documentation purposes.
+-- No changes needed - your schema is already set up correctly!
+

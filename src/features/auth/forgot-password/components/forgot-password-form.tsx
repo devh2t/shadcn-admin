@@ -5,7 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { sleep, cn } from '@/lib/utils'
+import { resetPassword } from '@/lib/auth-service'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -35,21 +36,28 @@ export function ForgotPasswordForm({
     defaultValues: { email: '' },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
 
-    toast.promise(sleep(2000), {
-      loading: 'Sending email...',
-      success: () => {
+    try {
+      const { error } = await resetPassword(data.email)
+
+      if (error) {
+        toast.error(error.message || 'Failed to send reset email')
         setIsLoading(false)
+        return
+      }
+
+      toast.success(`Password reset email sent to ${data.email}`)
         form.reset()
-        navigate({ to: '/otp' })
-        return `Email sent to ${data.email}`
-      },
-      error: 'Error',
-    })
+      navigate({ to: '/sign-in' })
+    } catch (error) {
+      toast.error('An unexpected error occurred. Please try again.')
+      // eslint-disable-next-line no-console
+      console.error('Reset password error:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

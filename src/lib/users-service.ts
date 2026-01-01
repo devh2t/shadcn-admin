@@ -1,5 +1,5 @@
-import { supabase } from './supabase'
 import { type User } from '@/features/users/data/schema'
+import { supabase } from './supabase'
 
 /**
  * Fetch all users from the profiles table
@@ -16,7 +16,7 @@ export async function getUsers(): Promise<User[]> {
 
   // Transform Supabase data to match User schema
   return (data || [])
-    .filter((profile) => profile.firstname && profile.lastname) // Filter out incomplete profiles
+    .filter((profile) => profile.first_name && profile.last_name) // Filter out incomplete profiles
     .map((profile) => ({
       id: profile.id,
       firstName: profile.firstname || '',

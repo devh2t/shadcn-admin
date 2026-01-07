@@ -1,5 +1,5 @@
+import { getCookie, removeCookie, setCookie } from '@/lib/cookies'
 import { create } from 'zustand'
-import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
 
 const ACCESS_TOKEN = 'thisisjustarandomstring'
 
@@ -8,6 +8,8 @@ interface AuthUser {
   email: string
   role: string[]
   exp: number
+  first_name?: string
+  avatar?: string
 }
 
 interface AuthState {

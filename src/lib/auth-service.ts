@@ -1,5 +1,5 @@
+import type { AuthError, Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import type { AuthError, User, Session } from '@supabase/supabase-js'
 
 export interface SignInResult {
   user: User | null
@@ -37,18 +37,43 @@ export async function signIn(
  */
 export async function signUp(
   email: string,
-  password: string
+  password: string,
+  profile: {
+    first_name: string
+    last_name: string
+    username: string
+    phone_number?: string
+  }
 ): Promise<SignUpResult> {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
   })
 
-  return {
-    user: data.user,
-    session: data.session,
-    error,
+  if (error || !data.user) {
+    return { user: null, session: null, error }
   }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .insert({
+      id: data.user.id,
+      email,
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      username: profile.username,
+      phone_number: profile.phone_number ?? null,
+      role: 'cashier',
+      status: 'active',
+    })
+
+  if (profileError) {
+    // eslint-disable-next-line no-console
+    console.error('Profile insert failed:', profileError)
+    return { user: data.user, session: data.session, error: profileError }
+  }
+
+  return { user: data.user, session: data.session, error: null }
 }
 
 /**

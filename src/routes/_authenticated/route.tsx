@@ -1,5 +1,6 @@
 import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 import { useAuthStore } from '@/stores/auth-store'
+// import { createFileRoute } from '@tanstack/react-router'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated')({
@@ -16,6 +17,7 @@ export const Route = createFileRoute('/_authenticated')({
   },
   component: AuthenticatedLayout,
 })
+
 
 // export const Route = createFileRoute('/_authenticated')({
 //   component: AuthenticatedLayout,

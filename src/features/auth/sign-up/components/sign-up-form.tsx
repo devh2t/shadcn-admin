@@ -1,12 +1,5 @@
-import { useState } from 'react'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
-import { IconGoogle, IconGithub } from '@/assets/brand-icons'
-import { signUp, signInWithGoogle } from '@/lib/auth-service'
-import { cn } from '@/lib/utils'
+import { IconGithub, IconGoogle } from '@/assets/brand-icons'
+import { PasswordInput } from '@/components/password-input'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -17,10 +10,24 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { PasswordInput } from '@/components/password-input'
+import { signInWithGoogle, signUp } from '@/lib/auth-service'
+import { cn } from '@/lib/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
 
 const formSchema = z
   .object({
+    first_name: z.string().min(1, 'First name is required'),
+    last_name: z.string().min(1, 'Last name is required'),
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and _'),
+    phone_number: z.string().optional(),
     email: z.email({
       error: (iss) =>
         iss.input === '' ? 'Please enter your email' : undefined,
@@ -73,7 +80,10 @@ export function SignUpForm({
     setIsLoading(true)
 
     try {
-      const { user, session, error } = await signUp(data.email, data.password)
+      const { user, session, error } = await signUp(data.email, data.password, {first_name: data.first_name,
+      last_name: data.last_name,
+      username: data.username,
+      phone_number: data.phone_number,})
 
       if (error) {
         toast.error(error.message || 'Failed to create account')
@@ -111,6 +121,60 @@ export function SignUpForm({
         className={cn('grid gap-3', className)}
         {...props}
       >
+        <FormField
+          control={form.control}
+          name="first_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>First Name</FormLabel>
+              <FormControl>
+                <Input placeholder='First name' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="last_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Last Name</FormLabel>
+              <FormControl>
+                <Input placeholder='Last name' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input placeholder='Username' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone_number"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone Number (optional)</FormLabel>
+              <FormControl>
+                <Input placeholder='Phone Number' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name='email'

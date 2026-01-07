@@ -1,8 +1,8 @@
-import { useNavigate, useLocation } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/auth-store'
-import { signOut } from '@/lib/auth-service'
-import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { signOut } from '@/lib/auth-service'
+import { useAuthStore } from '@/stores/auth-store'
+import { useLocation, useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 
 interface SignOutDialogProps {
   open: boolean

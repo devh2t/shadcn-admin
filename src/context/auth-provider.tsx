@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth-store'
+import { useOrgStore } from '@/stores/org-store'
+import type { Session, User } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState } from 'react'
 
 interface AuthContextType {
   user: User | null
@@ -30,29 +31,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
+
   const { auth } = useAuthStore()
+  const loadMyOrgs = useOrgStore((s) => s.loadMyOrgs)
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-      setInitialized(true)
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setLoading(false)
+        setInitialized(true)
 
-      // Update auth store
-      if (session?.user && session.access_token) {
-        auth.setUser({
-          accountNo: session.user.id,
-          email: session.user.email ?? '',
-          role: session.user.app_metadata?.role ?? ['user'],
-          exp: session.expires_at ? session.expires_at * 1000 : Date.now() + 3600000,
-        })
-        auth.setAccessToken(session.access_token)
-      } else {
+        // Update auth store
+        if (session?.user && session.access_token) {
+          auth.setUser({
+            accountNo: session.user.id,
+            email: session.user.email ?? '',
+            role: session.user.app_metadata?.role ?? ['user'],
+            exp: session.expires_at
+              ? session.expires_at * 1000
+              : Date.now() + 3600000,
+          })
+          auth.setAccessToken(session.access_token)
+
+          // ✅ load orgs after login/session restore
+          loadMyOrgs().catch(console.error)
+        } else {
+          auth.reset()
+        }
+      })
+      .catch((err) => {
+        console.error('getSession failed:', err)
+        setLoading(false)
+        setInitialized(true)
         auth.reset()
-      }
-    })
+      })
 
     // Listen for auth changes
     const {
@@ -67,9 +83,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           accountNo: session.user.id,
           email: session.user.email ?? '',
           role: session.user.app_metadata?.role ?? ['user'],
-          exp: session.expires_at ? session.expires_at * 1000 : Date.now() + 3600000,
+          exp: session.expires_at
+            ? session.expires_at * 1000
+            : Date.now() + 3600000,
         })
         auth.setAccessToken(session.access_token)
+
+        // ✅ load orgs after login
+        loadMyOrgs().catch(console.error)
       } else {
         auth.reset()
       }
@@ -78,7 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [auth])
+  }, [auth, loadMyOrgs])
 
   return (
     <AuthContext.Provider value={{ user, session, loading, initialized }}>
@@ -86,5 +107,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   )
 }
-
-
